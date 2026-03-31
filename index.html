@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cat Bus Escape</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffe6e6;
+      --text: #333;
+      --card-bg: #fff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      touch-action: none;
+    }
+    h1, h2, h3, .pixel-font {
+      font-family: 'Press Start 2P', cursive;
+    }
+    
+    /* Top Bar */
+    #top-bar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      z-index: 10;
+    }
+    .stats {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    .btn {
+      background: #ff5e5e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px #cc0000;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 0 #cc0000;
+    }
+    .btn-blue {
+      background: #1e90ff;
+      box-shadow: 0 4px #0056b3;
+    }
+    .btn-blue:active {
+      box-shadow: 0 0 #0056b3;
+    }
+    .btn-green {
+      background: #2ed573;
+      box-shadow: 0 4px #218c53;
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+    .btn-green:active {
+      box-shadow: 0 0 #218c53;
+    }
+
+    /* Main Container */
+    #game-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* Bottom Bar */
+    #bottom-bar {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      z-index: 5;
+    }
+
+    /* Overlay Modals */
+    .modal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 20;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      width: 90%;
+      max-width: 400px;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal h2 {
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #ff5e5e;
+      line-height: 1.4;
+    }
+    .stars {
+      font-size: 40px;
+      color: #FFD700;
+      margin-bottom: 15px;
+    }
+    
+    /* Leaderboard Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      font-size: 10px;
+      font-family: 'Press Start 2P', cursive;
+      color: #555;
+    }
+    td { font-weight: bold; }
+    
+    #toast {
+      position: absolute;
+      top: 20%;
+      background: rgba(255, 60, 60, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 16px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 15;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="top-bar">
+    <div class="stats">
+      Level: <span id="ui-level">1</span> <br/>
+      Moves: <span id="ui-moves">0</span>
+    </div>
+    <button class="btn" onclick="restartLevel()">RESTART</button>
+  </div>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="bottom-bar">
+      <button class="btn btn-blue" onclick="showLeaderboard()">LEADERBOARD</button>
+    </div>
+    
+    <div id="gridlock-modal" class="modal">
+      <div class="modal-content">
+        <h2>Gridlock! 🐱</h2>
+        <p style="margin-bottom:15px; font-weight:bold;">No available moves.</p>
+        <button class="btn btn-blue" onclick="restartLevel()">Restart Level</button>
+        <button class="btn" style="background:#888; margin-top:10px;" onclick="closeGridlock()">Continue</button>
+      </div>
+    </div>
+
+    <div id="win-modal" class="modal">
+      <div class="modal-content">
+        <h2 id="win-title">LEVEL COMPLETE</h2>
+        <div class="stars" id="win-stars">★★★</div>
+        <p style="margin-bottom:10px;">Moves: <span id="win-moves">0</span></p>
+        <button class="btn btn-green" onclick="nextLevel()">NEXT LEVEL</button>
+      </div>
+    </div>
+    
+    <div id="leaderboard-modal" class="modal">
+      <div class="modal-content">
+        <h2>LEADERBOARD</h2>
+        <table id="lb-table">
+          <thead>
+            <tr><th>LVL</th><th>STARS</th><th>BEST</th></tr>
+          </thead>
+          <tbody id="lb-body">
+          </tbody>
+        </table>
+        <button class="btn" onclick="closeLeaderboard()">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+// === CONSTANTS & CONFIG ===
+const COLORS = {
+  red:    { body: '#ff4757', detail: '#ff6b81' },
+  blue:   { body: '#1e90ff', detail: '#7bed9f' },
+  yellow: { body: '#ffa502', detail: '#eccc68' },
+  green:  { body: '#2ed573', detail: '#7bed9f' },
+  purple: { body: '#9b59b6', detail: '#8e44ad' },
+  orange: { body: '#ff7f50', detail: '#ff6348' }
+};
+
+const COLOR_NAMES = Object.keys(COLORS);
+
+// 16x16 Pixel Cat Array (0=empty, 1=body, 2=detail, 3=white, 4=black, 5=pink)
+const CAT_SPRITE = [
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+  [0,1,2,1,1,0,0,0,0,0,0,1,1,2,1,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,1,1,3,4,1,1,1,1,1,1,3,4,1,1,0],
+  [0,1,1,3,4,1,1,5,5,1,1,3,4,1,1,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,0,1,1,1,2,2,2,2,2,2,1,1,1,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,2,2,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,1,2,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,0,2,2,0,0,0,0,2,2,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+// === LEVEL DATA ===
+const LEVEL_DATA = [
+  { cols: 5, rows: 5, optimal: 4,
+    buses: [
+      { id: 1, x: 1, y: 1, dir: 'R', len: 2, color: 'red', cap: 2 },
+      { id: 2, x: 3, y: 2, dir: 'D', len: 2, color: 'blue', cap: 2 },
+    ],
+    catQueue: ['red', 'red', 'blue', 'blue']
+  },
+  { cols: 6, rows: 6, optimal: 7,
+    buses: [
+      { id: 1, x: 2, y: 2, dir: 'R', len: 2, color: 'green', cap: 2 },
+      { id: 2, x: 4, y: 1, dir: 'D', len: 3, color: 'yellow', cap: 3 },
+      { id: 3, x: 0, y: 4, dir: 'R', len: 2, color: 'green', cap: 2 },
+    ],
+    catQueue: ['yellow', 'yellow', 'yellow', 'green', 'green', 'green', 'green']
+  },
+  { cols: 6, rows: 6, optimal: 12,
+    buses: [
+      { id: 1, x: 1, y: 2, dir: 'R', len: 3, color: 'red', cap: 3 },
+      { id: 2, x: 4, y: 2, dir: 'D', len: 2, color: 'blue', cap: 2 },
+      { id: 3, x: 2, y: 3, dir: 'L', len: 2, color: 'purple', cap: 2 },
+      { id: 4, x: 3, y: 4, dir: 'U', len: 2, color: 'blue', cap: 1 },
+    ],
+    catQueue: ['purple','purple', 'red','red','red', 'blue','blue','blue']
+  },
+  { cols: 6, rows: 6, optimal: 15,
+    buses: [
+      { id: 1, x: 0, y: 0, dir: 'D', len: 3, color: 'orange', cap: 3 },
+      { id: 2, x: 1, y: 2, dir: 'R', len: 2, color: 'green', cap: 2 },
+      { id: 3, x: 4, y: 1, dir: 'D', len: 2, color: 'orange', cap: 1 },
+      { id: 4, x: 3, y: 4, dir: 'R', len: 2, color: 'red', cap: 2 },
+      { id: 5, x: 1, y: 5, dir: 'R', len: 2, color: 'green', cap: 2 },
+    ],
+    catQueue: ['green','green','green','green', 'orange','orange','orange','orange', 'red','red']
+  },
+  { cols: 6, rows: 6, optimal: 18,
+    buses: [
+      { id: 1, x: 0, y: 1, dir: 'R', len: 2, color: 'yellow', cap: 2 },
+      { id: 2, x: 3, y: 0, dir: 'D', len: 3, color: 'blue', cap: 3 },
+      { id: 3, x: 4, y: 3, dir: 'D', len: 2, color: 'yellow', cap: 2 },
+      { id: 4, x: 0, y: 3, dir: 'R', len: 2, color: 'red', cap: 3 },
+      { id: 5, x: 1, y: 4, dir: 'U', len: 2, color: 'blue', cap: 1 },
+      { id: 6, x: 4, y: 5, dir: 'L', len: 2, color: 'red', cap: 1 },
+    ],
+    catQueue: ['red','red','red','red', 'yellow','yellow','yellow','yellow', 'blue','blue','blue','blue']
+  },
+  { cols: 6, rows: 6, optimal: 25,
+    buses: [
+      { id: 1, x: 0, y: 1, dir: 'R', len: 2, color: 'purple', cap: 2 },
+      { id: 2, x: 2, y: 1, dir: 'D', len: 2, color: 'green', cap: 2 },
+      { id: 3, x: 3, y: 1, dir: 'R', len: 3, color: 'blue', cap: 3 },
+      { id: 4, x: 1, y: 3, dir: 'D', len: 3, color: 'purple', cap: 2 },
+      { id: 5, x: 2, y: 4, dir: 'R', len: 2, color: 'green', cap: 2 },
+      { id: 6, x: 5, y: 3, dir: 'U', len: 2, color: 'blue', cap: 1 },
+    ],
+    catQueue: ['blue','blue','blue','blue', 'purple','purple','purple','purple', 'green','green','green','green']
+  },
+  { cols: 6, rows: 6, optimal: 30,
+    buses: [
+      { id: 1, x: 1, y: 0, dir: 'D', len: 2, color: 'orange', cap: 2 },
+      { id: 2, x: 2, y: 1, dir: 'R', len: 2, color: 'yellow', cap: 2 },
+      { id: 3, x: 4, y: 0, dir: 'D', len: 3, color: 'orange', cap: 2 },
+      { id: 4, x: 0, y: 2, dir: 'R', len: 3, color: 'red', cap: 3 },
+      { id: 5, x: 3, y: 3, dir: 'D', len: 2, color: 'yellow', cap: 2 },
+      { id: 6, x: 1, y: 5, dir: 'R', len: 2, color: 'red', cap: 1 },
+      { id: 7, x: 4, y: 4, dir: 'L', len: 2, color: 'yellow', cap: 1 },
+    ],
+    catQueue: ['orange','orange','orange','orange', 'yellow','yellow','yellow','yellow','yellow', 'red','red','red','red']
+  },
+  { cols: 6, rows: 6, optimal: 35,
+    buses: [
+      { id: 1, x: 0, y: 0, dir: 'R', len: 2, color: 'blue', cap: 2 },
+      { id: 2, x: 2, y: 0, dir: 'D', len: 3, color: 'red', cap: 3 },
+      { id: 3, x: 3, y: 1, dir: 'R', len: 2, color: 'green', cap: 2 },
+      { id: 4, x: 5, y: 1, dir: 'D', len: 3, color: 'blue', cap: 2 },
+      { id: 5, x: 0, y: 2, dir: 'D', len: 2, color: 'purple', cap: 2 },
+      { id: 6, x: 1, y: 3, dir: 'R', len: 3, color: 'green', cap: 2 },
+      { id: 7, x: 2, y: 4, dir: 'D', len: 2, color: 'purple', cap: 2 },
+      { id: 8, x: 4, y: 5, dir: 'L', len: 2, color: 'red', cap: 1 },
+    ],
+    catQueue: ['red','red','red','red', 'green','green','green','green', 'blue','blue','blue','blue', 'purple','purple','purple','purple']
+  }
+];
+
+// === SYSTEM VARIABLES ===
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+let width, height;
+
+// Game State
+let currentLevelIdx = 0;
+let buses = [];
+let catQueue = [];
+let dock = []; 
+let moves = 0;
+let cols = 6, rows = 6;
+let isAnimating = false;
+let gridlockTimer = null;
+let selectedBusId = null;
+
+let cellSize = 0, gridOffsetX = 0, gridOffsetY = 0, dockOffsetY = 0, queueOffsetY = 0;
+let particles = [];
+
+function resize() {
+  const container = document.getElementById('game-container');
+  width = container.clientWidth;
+  height = container.clientHeight;
+  
+  canvas.width = width * window.devicePixelRatio;
+  canvas.height = height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  
+  const availHeight = height - 160; 
+  cellSize = Math.floor(Math.min((width - 40) / cols, availHeight / rows));
+  
+  gridOffsetX = (width - (cols * cellSize)) / 2;
+  gridOffsetY = 30;
+  
+  dockOffsetY = gridOffsetY + (rows * cellSize) + 25;
+  queueOffsetY = height - 70;
+}
+
+window.addEventListener('resize', resize);
+
+function initLevel(lvlIdx) {
+  if (lvlIdx >= LEVEL_DATA.length) lvlIdx = 0;
+  currentLevelIdx = lvlIdx;
+  const data = LEVEL_DATA[lvlIdx];
+  
+  cols = data.cols;
+  rows = data.rows;
+  buses = JSON.parse(JSON.stringify(data.buses)); 
+  buses.forEach(b => { b.animX = b.x; b.animY = b.y; b.loaded = 0; b.shake = 0; });
+  
+  catQueue = [...data.catQueue];
+  dock = [];
+  moves = 0;
+  selectedBusId = null;
+  particles = [];
+  isAnimating = false;
+  
+  document.getElementById('ui-level').innerText = lvlIdx + 1;
+  document.getElementById('ui-moves').innerText = moves;
+  document.getElementById('gridlock-modal').style.display = 'none';
+  
+  resize();
+}
+
+function restartLevel() {
+  document.getElementById('win-modal').style.display = 'none';
+  initLevel(currentLevelIdx);
+}
+
+function nextLevel() {
+  document.getElementById('win-modal').style.display = 'none';
+  initLevel(currentLevelIdx + 1);
+}
+
+// === LOGIC ===
+function getBusAxis(dir) { return (dir === 'L' || dir === 'R') ? 'H' : 'V'; }
+
+function isOccupiedByOther(x, y, ignoreId) {
+  for (let b of buses) {
+    if (b.id === ignoreId) continue;
+    let bx = b.x, by = b.y;
+    let axis = getBusAxis(b.dir);
+    if (axis === 'H' && y === by && x >= bx && x < bx + b.len) return true;
+    if (axis === 'V' && x === bx && y >= by && y < by + b.len) return true;
+  }
+  return false;
+}
+
+function moveBus(bus, dx, dy) {
+  moves++;
+  document.getElementById('ui-moves').innerText = moves;
+  
+  bus.x += dx;
+  bus.y += dy;
+  
+  let exited = false;
+  if (bus.dir === 'R' && bus.x >= cols) exited = true;
+  if (bus.dir === 'L' && bus.x + bus.len - 1 < 0) exited = true;
+  if (bus.dir === 'D' && bus.y >= rows) exited = true;
+  if (bus.dir === 'U' && bus.y + bus.len - 1 < 0) exited = true;
+  
+  if (exited) {
+    buses = buses.filter(b => b.id !== bus.id);
+    bus.x = -100; bus.y = -100; 
+    dock.push(bus);
+    processBoarding();
+  }
+}
+
+function processBoarding() {
+  if (isAnimating || catQueue.length === 0 || dock.length === 0) return checkWinOrGridlock();
+  
+  let frontCat = catQueue[0];
+  let matchedBus = null;
+  // STRICT ORDER: only check dock[0]
+  if (dock[0].color === frontCat && dock[0].loaded < dock[0].cap) {
+    matchedBus = dock[0];
+  }
+  
+  if (matchedBus) {
+    catQueue.shift();
+    matchedBus.loaded++;
+    if (matchedBus.loaded >= matchedBus.cap) dock = dock.filter(b => b.id !== matchedBus.id);
+    setTimeout(processBoarding, 150); 
+  } else {
+    checkWinOrGridlock();
+  }
+}
+
+function checkWinOrGridlock() {
+  if (buses.length === 0 && dock.length === 0 && catQueue.length === 0) {
+    // WIN
+    for(let i=0; i<50; i++) particles.push(createParticle());
+    setTimeout(() => {
+      let diff = moves - LEVEL_DATA[currentLevelIdx].optimal;
+      let stars = diff <= 2 ? 3 : (diff <= 6 ? 2 : 1);
+      
+      // Update Leaderboard
+      let stats = JSON.parse(localStorage.getItem('catBusStats') || '{}');
+      let curr = stats[currentLevelIdx] || { moves: Infinity, stars: 0 };
+      if (moves < curr.moves || (moves === curr.moves && stars > curr.stars)) {
+        stats[currentLevelIdx] = { moves, stars };
+        localStorage.setItem('catBusStats', JSON.stringify(stats));
+      }
+      
+      document.getElementById('win-stars').innerText = '★'.repeat(stars) + '☆'.repeat(3-stars);
+      document.getElementById('win-moves').innerText = moves;
+      document.getElementById('win-modal').style.display = 'flex';
+    }, 1000);
+  } else if (dock.length >= 2) {
+    if (catQueue.length > 0 && dock[0].color !== catQueue[0]) {
+      // Check if player has any valid moves left on the grid
+      let hasMoves = false;
+      for (let b of buses) {
+        let dx = 0, dy = 0;
+        if(b.dir==='R') dx=1; if(b.dir==='L') dx=-1;
+        if(b.dir==='D') dy=1; if(b.dir==='U') dy=-1;
+        
+        let targetX = b.x + dx + (dx>0 ? b.len-1 : 0);
+        let targetY = b.y + dy + (dy>0 ? b.len-1 : 0);
+        
+        let exiting = false;
+        if (b.dir === 'R' && b.x + dx >= cols) exiting = true;
+        if (b.dir === 'L' && b.x + dx + b.len - 1 < 0) exiting = true;
+        if (b.dir === 'D' && b.y + dy >= rows) exiting = true;
+        if (b.dir === 'U' && b.y + dy + b.len - 1 < 0) exiting = true;
+        
+        if (!exiting && !isOccupiedByOther(targetX, targetY, b.id)) {
+           if (targetX >= 0 && targetX < cols && targetY >= 0 && targetY < rows) {
+               hasMoves = true; break;
+           }
+        }
+      }
+      
+      if (!hasMoves) {
+        document.getElementById('gridlock-modal').style.display = 'flex';
+      }
+    }
+  }
+}
+
+function closeGridlock() {
+  document.getElementById('gridlock-modal').style.display = 'none';
+}
+
+function swapDock() {
+  if (dock.length === 2) {
+    let temp = dock[0];
+    dock[0] = dock[1];
+    dock[1] = temp;
+    processBoarding();
+  }
+}
+
+// === INPUT ===
+canvas.addEventListener('pointerdown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  
+  // Dock swap
+  if (py >= dockOffsetY && py <= dockOffsetY + cellSize * 1.5) {
+    let totalW = dock.length * (cellSize * 2 + 10);
+    let startX = (width - totalW) / 2;
+    if (px >= startX && px <= startX + totalW) {
+      swapDock(); return;
+    }
+  }
+  
+  // Grid interaction
+  const gx = Math.floor((px - gridOffsetX) / cellSize);
+  const gy = Math.floor((py - gridOffsetY) / cellSize);
+  
+  if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
+    let clickedBus = null;
+    for (let b of buses) {
+      let bx = Math.round(b.animX), by = Math.round(b.animY);
+      let axis = getBusAxis(b.dir);
+      if (axis === 'H' && gy === by && gx >= bx && gx < bx + b.len) clickedBus = b;
+      if (axis === 'V' && gx === bx && gy >= by && gy < by + b.len) clickedBus = b;
+    }
+    
+    if (clickedBus) {
+      if (selectedBusId === clickedBus.id) {
+        let step = (clickedBus.dir==='R'||clickedBus.dir==='D') ? 1 : -1;
+        tryMove(clickedBus, step);
+      } else {
+        selectedBusId = clickedBus.id;
+      }
+    } else if (selectedBusId) {
+      let b = buses.find(b => b.id === selectedBusId);
+      if (b) {
+        let bx = b.x, by = b.y;
+        let axis = getBusAxis(b.dir);
+        let dx = 0, dy = 0;
+        
+        if (axis === 'H' && gy === by) {
+          if (gx === bx - 1) dx = -1;
+          if (gx === bx + b.len) dx = 1;
+        } else if (axis === 'V' && gx === bx) {
+          if (gy === by - 1) dy = -1;
+          if (gy === by + b.len) dy = 1;
+        }
+        
+        if (dx !== 0 || dy !== 0) {
+          let validDir = true;
+          if (b.dir === 'R' && dx < 0) validDir = false;
+          if (b.dir === 'L' && dx > 0) validDir = false;
+          if (b.dir === 'D' && dy < 0) validDir = false;
+          if (b.dir === 'U' && dy > 0) validDir = false;
+
+          if (!validDir) {
+            b.shake = 10;
+          } else if (!isOccupiedByOther(bx + dx + (dx>0?b.len-1:0), by + dy + (dy>0?b.len-1:0), b.id)) {
+            let valid = true;
+            if (b.dir === 'R' && bx + dx < 0) valid = false;
+            if (b.dir === 'L' && bx + dx + b.len > cols) valid = false;
+            if (b.dir === 'D' && by + dy < 0) valid = false;
+            if (b.dir === 'U' && by + dy + b.len > rows) valid = false;
+            
+            let exiting = false;
+            if (b.dir === 'R' && bx + dx >= cols) exiting = true;
+            if (b.dir === 'L' && bx + dx + b.len - 1 < 0) exiting = true;
+            if (b.dir === 'D' && by + dy >= rows) exiting = true;
+            if (b.dir === 'U' && by + dy + b.len - 1 < 0) exiting = true;
+            
+            if (exiting && dock.length >= 2) valid = false;
+            
+            if (valid) moveBus(b, dx, dy);
+            else b.shake = 10;
+          } else {
+             b.shake = 10;
+          }
+        }
+      }
+    }
+  } else {
+    selectedBusId = null; 
+  }
+});
+
+function tryMove(b, step) {
+  let dx = 0, dy = 0;
+  if(b.dir==='R') dx=1; if(b.dir==='L') dx=-1;
+  if(b.dir==='D') dy=1; if(b.dir==='U') dy=-1;
+  
+  if (!isOccupiedByOther(b.x + dx + (dx>0?b.len-1:0), b.y + dy + (dy>0?b.len-1:0), b.id)) {
+    let exiting = false;
+    if (b.dir === 'R' && b.x + dx >= cols) exiting = true;
+    if (b.dir === 'L' && b.x + dx + b.len - 1 < 0) exiting = true;
+    if (b.dir === 'D' && b.y + dy >= rows) exiting = true;
+    if (b.dir === 'U' && b.y + dy + b.len - 1 < 0) exiting = true;
+    if (exiting && dock.length >= 2) b.shake = 10;
+    else moveBus(b, dx, dy);
+  } else b.shake = 10;
+}
+
+// Swipe
+let touchSX = 0, touchSY = 0;
+canvas.addEventListener('touchstart', e => {
+  touchSX = e.touches[0].clientX;
+  touchSY = e.touches[0].clientY;
+}, {passive:true});
+
+canvas.addEventListener('touchend', e => {
+  if (!selectedBusId) return;
+  let dx = e.changedTouches[0].clientX - touchSX;
+  let dy = e.changedTouches[0].clientY - touchSY;
+  let b = buses.find(b => b.id === selectedBusId);
+  if (!b) return;
+  
+  let axis = getBusAxis(b.dir);
+  if (axis === 'H' && Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+    let step = dx > 0 ? 1 : -1;
+    let validDir = (b.dir === 'R' && step > 0) || (b.dir === 'L' && step < 0);
+    if (!validDir) {
+      b.shake = 10;
+    } else if (!isOccupiedByOther(b.x + step + (step>0?b.len-1:0), b.y, b.id)) {
+       if (step === 1 && b.dir === 'L' && b.x + step + b.len > cols) b.shake=10;
+       else if (step === -1 && b.dir === 'R' && b.x + step < 0) b.shake=10;
+       else {
+         let exiting = (step === 1 && b.dir==='R' && b.x+step >= cols) || (step === -1 && b.dir==='L' && b.x+step+b.len-1 < 0);
+         if (exiting && dock.length >= 2) b.shake = 10;
+         else moveBus(b, step, 0);
+       }
+    } else b.shake = 10;
+  } else if (axis === 'V' && Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) {
+    let step = dy > 0 ? 1 : -1;
+    let validDir = (b.dir === 'D' && step > 0) || (b.dir === 'U' && step < 0);
+    if (!validDir) {
+      b.shake = 10;
+    } else if (!isOccupiedByOther(b.x, b.y + step + (step>0?b.len-1:0), b.id)) {
+       if (step === 1 && b.dir === 'U' && b.y + step + b.len > rows) b.shake=10;
+       else if (step === -1 && b.dir === 'D' && b.y + step < 0) b.shake=10;
+       else {
+         let exiting = (step === 1 && b.dir==='D' && b.y+step >= rows) || (step === -1 && b.dir==='U' && b.y+step+b.len-1 < 0);
+         if (exiting && dock.length >= 2) b.shake = 10;
+         else moveBus(b, 0, step);
+       }
+    } else b.shake = 10;
+  }
+});
+
+// UI & Leaderboard
+function showLeaderboard() {
+  const lbBody = document.getElementById('lb-body');
+  lbBody.innerHTML = '';
+  let stats = JSON.parse(localStorage.getItem('catBusStats') || '{}');
+  
+  for(let i=0; i<8; i++){
+    let data = stats[i] || { stars: 0, moves: '-' };
+    let row = `<tr>
+      <td>${i+1}</td>
+      <td style="color:#FFD700">${'★'.repeat(data.stars)}${'☆'.repeat(3-data.stars)}</td>
+      <td>${data.moves}</td>
+    </tr>`;
+    lbBody.innerHTML += row;
+  }
+  document.getElementById('leaderboard-modal').style.display = 'flex';
+}
+function closeLeaderboard() {
+  document.getElementById('leaderboard-modal').style.display = 'none';
+}
+
+// === RENDERING ===
+function drawPixelCat(ctx, x, y, size, colorObj, bounce = 0) {
+  let ps = size / 16;
+  for(let r=0; r<16; r++){
+    for(let c=0; c<16; c++){
+      let val = CAT_SPRITE[r][c];
+      if (val === 0) continue;
+      if (val === 1) ctx.fillStyle = colorObj.body;
+      if (val === 2) ctx.fillStyle = colorObj.detail;
+      if (val === 3) ctx.fillStyle = '#FFF';
+      if (val === 4) ctx.fillStyle = '#000';
+      if (val === 5) ctx.fillStyle = '#ff9ff3'; 
+      
+      let bx = x + c * ps;
+      let by = y + r * ps + (val===1 || val===2 ? bounce : bounce*0.8);
+      ctx.fillRect(bx, by, ps+0.5, ps+0.5); 
+    }
+  }
+}
+
+function drawRoundRect(ctx, x, y, w, h, radius, color) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function createParticle() {
+  return {
+    x: width/2, y: height/2,
+    vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15,
+    life: 1.0, color: COLORS[COLOR_NAMES[Math.floor(Math.random()*COLOR_NAMES.length)]].body
+  };
+}
+
+let time = 0;
+function render() {
+  ctx.fillStyle = '#ffe6e6';
+  ctx.fillRect(0,0,width,height);
+  
+  time += 0.1;
+  let bounce = Math.sin(time) * 1.5;
+  
+  // Grid
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(gridOffsetX-5, gridOffsetY-5, cols*cellSize+10, rows*cellSize+10);
+  
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<cols; c++){
+      ctx.strokeStyle = '#eee';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(gridOffsetX + c*cellSize, gridOffsetY + r*cellSize, cellSize, cellSize);
+    }
+  }
+
+  // Buses
+  let padding = cellSize * 0.1;
+  for (let b of buses) {
+    b.animX += (b.x - b.animX) * 0.2;
+    b.animY += (b.y - b.animY) * 0.2;
+    if (b.shake > 0) b.shake -= 1;
+
+    let sx = b.shake > 0 ? Math.sin(b.shake*2)*4 : 0;
+    
+    let bw = getBusAxis(b.dir) === 'H' ? b.len * cellSize : cellSize;
+    let bh = getBusAxis(b.dir) === 'V' ? b.len * cellSize : cellSize;
+    
+    let px = gridOffsetX + b.animX * cellSize + (getBusAxis(b.dir)==='H'?sx:0);
+    let py = gridOffsetY + b.animY * cellSize + (getBusAxis(b.dir)==='V'?sx:0);
+
+    drawRoundRect(ctx, px + padding, py + padding, bw - padding*2, bh - padding*2, 10, COLORS[b.color].body);
+    
+    if (selectedBusId === b.id) {
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+    }
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    let cx = px + bw/2, cy = py + bh/2;
+    let arrS = 10;
+    if(b.dir==='R'){ ctx.moveTo(cx+arrS,cy); ctx.lineTo(cx-arrS,cy-arrS); ctx.lineTo(cx-arrS,cy+arrS); }
+    if(b.dir==='L'){ ctx.moveTo(cx-arrS,cy); ctx.lineTo(cx+arrS,cy-arrS); ctx.lineTo(cx+arrS,cy+arrS); }
+    if(b.dir==='D'){ ctx.moveTo(cx,cy+arrS); ctx.lineTo(cx-arrS,cy-arrS); ctx.lineTo(cx+arrS,cy-arrS); }
+    if(b.dir==='U'){ ctx.moveTo(cx,cy-arrS); ctx.lineTo(cx-arrS,cy+arrS); ctx.lineTo(cx+arrS,cy+arrS); }
+    ctx.fill();
+    
+    for(let i=0; i<b.loaded; i++){
+       let windowS = cellSize * 0.6;
+       let lx = getBusAxis(b.dir) === 'H' ? px + padding + i*cellSize + (cellSize-windowS)/2 : px + (cellSize-windowS)/2;
+       let ly = getBusAxis(b.dir) === 'V' ? py + padding + i*cellSize + (cellSize-windowS)/2 : py + (cellSize-windowS)/2;
+       
+       ctx.fillStyle = '#fff';
+       ctx.fillRect(lx, ly, windowS, windowS); 
+       drawPixelCat(ctx, lx, ly+2, windowS, COLORS[b.color], 0);
+    }
+  }
+
+  // Dock
+  let dockW = cellSize * 2.5; 
+  let dockH = cellSize;
+  let totalDockW = 2 * dockW + 20;
+  let dockStartX = (width - totalDockW) / 2;
+  
+  ctx.fillStyle = '#ccc';
+  drawRoundRect(ctx, dockStartX-10, dockOffsetY-10, totalDockW+20, dockH+20, 15, '#e0e0e0');
+  
+  for(let i=0; i<2; i++){
+    ctx.strokeStyle = '#fff';
+    ctx.strokeRect(dockStartX + i*(dockW+20), dockOffsetY, dockW, dockH);
+  }
+  
+  dock.forEach((b, i) => {
+     let bx = dockStartX + i*(dockW+20) + padding;
+     let by = dockOffsetY + padding;
+     drawRoundRect(ctx, bx, by, dockW - padding*2, dockH - padding*2, 10, COLORS[b.color].body);
+     
+     for(let k=0; k<b.loaded; k++){
+       let wS = dockW / b.cap * 0.7;
+       let spacing = (dockW - padding*2) / b.cap;
+       ctx.fillStyle = '#fff';
+       ctx.fillRect(bx + k*spacing + 5, by+5, wS, dockH-padding*2-10);
+       drawPixelCat(ctx, bx + k*spacing + 5, by+8, wS, COLORS[b.color], bounce*0.5);
+     }
+  });
+
+  if (dock.length === 2) {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 12px Nunito';
+    ctx.textAlign = 'center';
+    ctx.fillText('TAP TO SWAP', width/2, dockOffsetY - 12);
+  }
+
+  // Queue
+  let qSize = 32;
+  let qStartX = (width - Math.min(catQueue.length, 10) * (qSize + 5)) / 2;
+  
+  for(let i=0; i<Math.min(catQueue.length, 10); i++){
+     let cqColor = COLORS[catQueue[i]];
+     let bb = Math.sin(time + i) * 3; 
+     drawPixelCat(ctx, qStartX + i*(qSize+5), queueOffsetY + bb, qSize, cqColor, bb);
+  }
+  if(catQueue.length > 10) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 20px Nunito';
+    ctx.fillText('+' + (catQueue.length-10), qStartX + 10*(qSize+5), queueOffsetY + 25);
+  }
+
+  // Particles
+  for(let i=particles.length-1; i>=0; i--){
+    let p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.life -= 0.02;
+    if(p.life <= 0) particles.splice(i, 1);
+    else {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, 6, 6);
+      ctx.globalAlpha = 1.0;
+    }
+  }
+
+  requestAnimationFrame(render);
+}
+
+// Start
+initLevel(0);
+render();
+
+</script>
+</body>
+</html>
