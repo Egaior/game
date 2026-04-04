@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cat Bus Escape - Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="top-bar">
+    <button class="btn btn-gray" style="margin:0;" onclick="goBack()">← MAP</button>
+    <div class="info">
+      Level <span id="ui-level">1</span> / 25<br/>
+      Moves: <span id="ui-moves">0</span>
+    </div>
+    <button class="btn" style="margin:0;" onclick="restartLevel()">↺ RESTART</button>
+  </div>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="bottom-bar">
+      <button class="btn btn-blue" onclick="showLeaderboard()">LEADERBOARD</button>
+    </div>
+    
+    <div id="gridlock-modal" class="modal">
+      <div class="modal-content">
+        <h2>Gridlock! 🐱</h2>
+        <p style="margin-bottom:15px; font-weight:bold;">No available moves.</p>
+        <button class="btn btn-blue" onclick="restartLevel()">Restart Level</button>
+        <button class="btn btn-gray" onclick="goBack()">Back to Map</button>
+      </div>
+    </div>
+
+    <div id="win-modal" class="modal">
+      <div class="modal-content">
+        <h2 id="win-title">LEVEL COMPLETE</h2>
+        <div class="stars" id="win-stars">★★★</div>
+        <p style="margin-bottom:10px;">Moves: <span id="win-moves">0</span></p>
+        <button class="btn btn-green" onclick="nextLevel()">NEXT LEVEL</button><br>
+        <button class="btn btn-gray" onclick="goBack()">BACK TO MAP</button>
+      </div>
+    </div>
+    
+    <div id="leaderboard-modal" class="modal">
+      <div class="modal-content">
+        <h2>LEADERBOARD</h2>
+        <table id="lb-table">
+          <thead>
+            <tr><th>LVL</th><th>STARS</th><th>BEST</th></tr>
+          </thead>
+          <tbody id="lb-body">
+          </tbody>
+        </table>
+        <button class="btn" onclick="closeLeaderboard()">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/levels.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
