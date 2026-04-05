@@ -110,15 +110,16 @@ const LEVELS = [
     {id:5,x:3,y:4,dir:'U',len:2,color:'red',cap:2},
     {id:6,x:0,y:5,dir:'R',len:2,color:'yellow',cap:2}
   ],catQueue:['yellow','yellow','yellow','yellow','yellow','blue','blue','blue','blue','red','red','red','red']},
-  // 17
-  { cols:6,rows:6,optimal:31,buses:[
+  // 17 — FIXED: Bus6 moved to x:0,y:5 (overlap removed)
+  { cols:6,rows:6,optimal:24,buses:[
     {id:1,x:1,y:1,dir:'D',len:2,color:'green',cap:2},
     {id:2,x:2,y:2,dir:'R',len:2,color:'purple',cap:2},
     {id:3,x:4,y:1,dir:'D',len:3,color:'orange',cap:3},
     {id:4,x:0,y:3,dir:'R',len:3,color:'blue',cap:3},
     {id:5,x:3,y:4,dir:'U',len:2,color:'purple',cap:2},
-    {id:6,x:2,y:5,dir:'L',len:2,color:'green',cap:2}
-  ],catQueue:['purple','purple','purple','purple','orange','orange','orange','blue','blue','blue','green','green','green','green']},
+    {id:6,x:0,y:5,dir:'R',len:2,color:'green',cap:2}
+  ],catQueue:['purple','purple','purple','purple','orange','orange','orange',
+              'blue','blue','blue','green','green','green','green']},
   // 18
   { cols:6,rows:6,optimal:29,buses:[
     {id:1,x:0,y:1,dir:'R',len:2,color:'red',cap:2},
@@ -147,8 +148,8 @@ const LEVELS = [
     {id:6,x:1,y:5,dir:'R',len:2,color:'red',cap:1},
     {id:7,x:4,y:4,dir:'L',len:2,color:'yellow',cap:1}
   ],catQueue:['orange','orange','orange','orange','yellow','yellow','yellow','yellow','yellow','red','red','red','red']},
-  // 21
-  { cols:6,rows:6,optimal:36,buses:[
+  // 21 — FIXED: catQueue reordered to match natural exit flow
+  { cols:6,rows:6,optimal:22,buses:[
     {id:1,x:0,y:0,dir:'R',len:2,color:'blue',cap:2},
     {id:2,x:2,y:0,dir:'D',len:3,color:'red',cap:3},
     {id:3,x:3,y:1,dir:'R',len:2,color:'green',cap:2},
@@ -156,17 +157,19 @@ const LEVELS = [
     {id:5,x:0,y:2,dir:'D',len:2,color:'purple',cap:2},
     {id:6,x:1,y:3,dir:'R',len:3,color:'green',cap:2},
     {id:7,x:2,y:4,dir:'D',len:2,color:'purple',cap:2}
-  ],catQueue:['red','red','red','green','green','green','green','blue','blue','blue','blue','purple','purple','purple','purple']},
-  // 22
-  { cols:6,rows:6,optimal:32,buses:[
-    {id:1,x:1,y:1,dir:'R',len:2,color:'yellow',cap:2},
-    {id:2,x:3,y:0,dir:'D',len:2,color:'orange',cap:2},
-    {id:3,x:4,y:1,dir:'D',len:3,color:'red',cap:3},
-    {id:4,x:0,y:2,dir:'D',len:2,color:'yellow',cap:2},
-    {id:5,x:1,y:3,dir:'R',len:3,color:'blue',cap:3},
-    {id:6,x:3,y:4,dir:'R',len:2,color:'orange',cap:2},
-    {id:7,x:2,y:5,dir:'L',len:2,color:'red',cap:2}
-  ],catQueue:['orange','orange','orange','orange','red','red','red','red','red','yellow','yellow','yellow','yellow','blue','blue','blue']},
+  ],catQueue:['blue','blue','blue','blue','green','green','green','green',
+              'red','red','red','purple','purple','purple','purple']},
+  // 22 — FIXED: full redesign (same colors/counts, no deadlock)
+  { cols:6,rows:6,optimal:30,buses:[
+    {id:1,x:0,y:0,dir:'R',len:2,color:'orange',cap:2},
+    {id:2,x:3,y:0,dir:'D',len:3,color:'red',cap:3},
+    {id:3,x:4,y:0,dir:'D',len:2,color:'yellow',cap:2},
+    {id:4,x:0,y:2,dir:'D',len:2,color:'blue',cap:3},
+    {id:5,x:1,y:3,dir:'R',len:2,color:'orange',cap:2},
+    {id:6,x:4,y:3,dir:'R',len:2,color:'yellow',cap:2},
+    {id:7,x:0,y:5,dir:'R',len:3,color:'red',cap:2}
+  ],catQueue:['orange','orange','orange','orange','red','red','red','red','red',
+              'yellow','yellow','yellow','yellow','blue','blue','blue']},
   // 23
   { cols:6,rows:6,optimal:33,buses:[
     {id:1,x:1,y:2,dir:'D',len:2,color:'purple',cap:2},
@@ -186,15 +189,17 @@ const LEVELS = [
     {id:6,x:2,y:4,dir:'R',len:2,color:'purple',cap:2},
     {id:7,x:2,y:2,dir:'R',len:2,color:'blue',cap:2}
   ],catQueue:['purple','purple','purple','purple','purple','blue','blue','blue','blue','yellow','yellow','yellow','green','green','green','green']},
-  // 25 — FIXED: deadlock resolved
-  { cols:6,rows:6,optimal:37,buses:[
-    {id:1,x:1,y:0,dir:'D',len:3,color:'blue',cap:3},
-    {id:2,x:2,y:2,dir:'R',len:2,color:'purple',cap:2},
-    {id:3,x:4,y:1,dir:'D',len:2,color:'red',cap:2},
-    {id:4,x:5,y:3,dir:'D',len:2,color:'yellow',cap:2},
-    {id:5,x:0,y:4,dir:'R',len:3,color:'orange',cap:3},
-    {id:6,x:3,y:3,dir:'D',len:2,color:'blue',cap:2},
-    {id:7,x:0,y:2,dir:'D',len:2,color:'purple',cap:2},
-    {id:8,x:4,y:5,dir:'L',len:2,color:'red',cap:2}
-  ],catQueue:['purple','purple','purple','purple','red','red','red','red','orange','orange','orange','yellow','yellow','blue','blue','blue','blue','blue']}
+  // 25 — FIXED: full redesign (same colors/counts, no deadlock)
+  { cols:6,rows:6,optimal:32,buses:[
+    {id:1,x:0,y:0,dir:'D',len:3,color:'blue',cap:3},
+    {id:2,x:1,y:1,dir:'R',len:2,color:'purple',cap:2},
+    {id:3,x:3,y:0,dir:'D',len:2,color:'red',cap:2},
+    {id:4,x:4,y:2,dir:'D',len:2,color:'yellow',cap:2},
+    {id:5,x:5,y:0,dir:'D',len:3,color:'blue',cap:2},
+    {id:6,x:0,y:3,dir:'R',len:3,color:'orange',cap:3},
+    {id:7,x:3,y:3,dir:'D',len:2,color:'purple',cap:2},
+    {id:8,x:1,y:5,dir:'R',len:2,color:'red',cap:2}
+  ],catQueue:['purple','purple','purple','purple','red','red','red','red',
+              'orange','orange','orange','yellow','yellow',
+              'blue','blue','blue','blue','blue']}
 ];
